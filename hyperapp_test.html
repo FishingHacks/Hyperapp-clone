@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hyperapp test</title>
+    <!-- Hyperapp code -->
+    <script src="./hyperapp.js"></script>
+    <script>
+      function load() {
+        let vdom = app({
+          init: {
+            count: 0,
+          },
+          subscriptions: [],
+          elements: (state) => {
+            console.log(state);
+            return [
+              h("p", [], {class: "hi"}, `Pressed: ${state?.count||0}`),
+              h(
+                "button",
+                [],
+                {
+                  events: {
+                    click: (...el) => {if(!(state?.count)) state.count=0; state.count++},
+                  },
+                },
+                "Click me!"
+              ),
+            ];
+          },
+          node: document.querySelectorAll("main")[0],
+        });
+      }
+    </script>
+  </head>
+  <body onload="load()">
+    <main></main>
+  </body>
+</html>
