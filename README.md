@@ -1,2 +1,2 @@
 # Hyperapp-clone
-A clone of the little framework Hyperapp
+A clone of the little framework [Hyperapp](https://github.com/jorgebucaran/hyperapp)
