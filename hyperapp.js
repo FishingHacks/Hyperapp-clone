@@ -1,4 +1,10 @@
 class HEvent {
+  /**
+   *
+   * @param {string} name event name (from the EventListener specifications)
+   * @param {Event} target the JS Event
+   * @param {VNode} VNode the element
+   */
   constructor(name, target, VNode) {
     this.name = name;
     this.target = target;
@@ -6,129 +12,19 @@ class HEvent {
   }
 }
 
-
+/**
+ * @param {string} str the String
+ * @returns {boolean} if the string has only spaces or is empty
+ */
 function isSpace(str) {
-  return (!str || str.length === 0 || /^\s*$/.test(str))
+  return !str || str.length === 0 || /^\s*$/.test(str);
 }
 
 String.isSpace = isSpace;
 
-String.prototype.__defineGetter__("isSpace", function() {return (!this || this.length === 0 || /^\s*$/.test(this))});
-
-let nodes = [
-  "a",
-  "abbr",
-  "address",
-  "area",
-  "article",
-  "aside",
-  "audio",
-  "b",
-  "base",
-  "bdi",
-  "bdo",
-  "blockquote",
-  "body",
-  "br",
-  "button",
-  "canvas",
-  "caption",
-  "cite",
-  "code",
-  "col",
-  "colgroup",
-  "data",
-  "datalist",
-  "dd",
-  "del",
-  "details",
-  "dfn",
-  "dialog",
-  "div",
-  "dl",
-  "dt",
-  "em",
-  "embed",
-  "fieldset",
-  "figcaption",
-  "figure",
-  "footer",
-  "form",
-  "h1",
-  "h2",
-  "h3",
-  "h4",
-  "h5",
-  "h6",
-  "head",
-  "header",
-  "hgroup",
-  "hr",
-  "html",
-  "i",
-  "iframe",
-  "img",
-  "input",
-  "ins",
-  "kbd",
-  "label",
-  "legend",
-  "li",
-  "link",
-  "main",
-  "map",
-  "mark",
-  "menu",
-  "meta",
-  "meter",
-  "nav",
-  "noscript",
-  "object",
-  "ol",
-  "optgroup",
-  "option",
-  "output",
-  "p",
-  "param",
-  "picture",
-  "pre",
-  "progress",
-  "q",
-  "rp",
-  "rt",
-  "ruby",
-  "s",
-  "samp",
-  "script",
-  "section",
-  "select",
-  "slot",
-  "small",
-  "source",
-  "span",
-  "strong",
-  "style",
-  "sub",
-  "summary",
-  "sup",
-  "table",
-  "tbody",
-  "td",
-  "template",
-  "textarea",
-  "tfoot",
-  "th",
-  "thead",
-  "time",
-  "title",
-  "tr",
-  "track",
-  "u",
-  "ul",
-  "var",
-  "video",
-  "wbr",
-];
+String.prototype.__defineGetter__("isSpace", function () {
+  return !this || this.length === 0 || /^\s*$/.test(this);
+});
 
 class VNode {
   #tag;
@@ -137,9 +33,14 @@ class VNode {
   #text;
   #events;
   #vdom = undefined;
-  constructor(tag, children, props = {}, text = "", allowCustomTags=true) {
-    if ((nodes.indexOf(tag) == -1) && !allowCustomTags)
-      throw new Error("Tag " + tag + " isn't a valid HTML node");
+  /**
+   *
+   * @param {string} tag The HTMLElement tag
+   * @param {Array<VNode>} children the children
+   * @param {{[name: string]: unknown}} props the element properties
+   * @param {string} text The textcontent
+   */
+  constructor(tag, children, props = {}, text = "") {
     if (!children) children = [];
     if (!Array.isArray(children)) children = [children];
     this.#tag = tag;
@@ -148,11 +49,19 @@ class VNode {
     this.#text = text;
   }
 
+  /**
+   * Oh, c'mon, why are you here again! Get out, GET OUT!
+   * - Maybe Gordon Ramsey
+   */
   set vdom(val) {
     this.#children.forEach((el) => (el.vdom = val));
     this.#vdom = val;
   }
 
+  /**
+   * What the **** guys, why, why? Tell me, WHY?
+   *    Fishi won't be happy, if you use this :<
+   */
   callEvent(eventName, args = []) {
     if (eventName == "hyperappUpdate") {
       this.#children.forEach((el) => {
@@ -164,13 +73,24 @@ class VNode {
     let e = new HEvent(eventName, args, this);
     if (this.#props.events && this.#props.events[eventName])
       this.#props.events[eventName](e, Date.now(), this);
+    if (this.#props["on" + eventName])
+      this.#props["on" + eventName](e, Date.now(), this);
   }
 
+  /**
+   * Ey, who called this? This is perfect called!
+   * @param {VNode} children
+   */
   addChildren(children) {
     this.#children.push(children);
     children.vdom = this.#vdom;
   }
 
+  /**
+   * Not even I know, what you could do with this. Good luck!
+   * @param {(el: VNode)=>boolean} q the query
+   * @returns {boolean} if the action was successful
+   */
   removeChildren(q) {
     index = undefined;
     this.children.forEach((el, i) => {
@@ -181,23 +101,26 @@ class VNode {
     return index != undefined;
   }
 
+  /**
+   * What is wrong?
+   * I forgot to call this, Chef!
+   * @returns {void} a big nothing
+   */
   render() {
     if (!this.#vdom) return undefined;
     let propVals = Object.values(this.#props);
     let propKeys = Object.keys(this.#props);
-    propKeys.map((str) => (str.startsWith("on") ? str : ""));
-    propKeys.forEach((el) => {
-      delete this.#props[el];
+    propKeys.forEach((el, i) => {
+      el.startsWith("on") ? (this.#props.events[el.substring(2)] = propVals[i]) : null;
     });
-    propKeys.map((str)=>str.replace("on", ""))
-    propKeys.forEach((el, i) => {el.isSpace?this.#props.events[el] = propVals[i]:null});
+    propKeys = propKeys.map(el=>el.startsWith("on")?"":el);
     let txt = this.text;
     let el = document.createElement(this.#tag);
     el.textContent = txt != undefined ? txt : "";
     if (this.#props.classes)
       this.#props.classes.forEach((cls) => el.classList.add(cls));
     let clonedProps = {};
-    Object.keys.forEach((prop, i) => {
+    Object.keys(clonedProps).forEach((prop, i) => {
       if (prop != "events")
         el.setAttribute(prop, Object.values(this.#props)[i]);
     });
@@ -214,18 +137,34 @@ class VNode {
     return el;
   }
 
+  /**
+   * Good choice! That fit's really well
+   * @param {string} val the new text
+   */
   set text(val) {
     this.#text = val;
   }
 
+  /**
+   * loading...
+   * @returns {string} the text
+   */
   get text() {
     return this.#text;
   }
 
+  /**
+   * loading...
+   * @returns {Array<VNode>} the children
+   */
   get children() {
     return this.#children;
   }
 
+  /**
+   * loading...
+   * @param {Array<VNode>} val the new children
+   */
   set children(val) {
     this.#children = val;
   }
@@ -237,18 +176,32 @@ class VDOM {
   #elements;
   #subscription = [];
   #firstRender = true;
+  /**
+   * You have 45 minutes, go!
+   * @param {HTMLElement} parentElement the parent element, normally the body
+   * @param {(state: {[name: string]: unknown})=>Array<VNode>} elements the function to retrieve the site elements
+   * @param {Array<{
+   *  name: string;
+   *  invoke: ()=>void
+   * }>} eventSubscriptions the event Subscriptions
+   * @param {{[name: string]: unknown}} state the state
+   */
   constructor(parentElement, elements, eventSubscriptions, state) {
     this.#parentElement = parentElement;
     if (typeof eventSubscriptions == "undefined") eventSubscriptions = [];
     this.#subscription = eventSubscriptions;
     if (typeof elements == undefined) elements = () => [];
     this.#elements = elements;
-    let gen_els = this.#elements();
+    let gen_els = this.#elements(state);
     if (!Array.isArray(gen_els)) gen_els = [gen_els];
     gen_els.forEach((el) => (el.vdom = this));
     this.#state = state;
   }
 
+  /**
+   * Now, all of you, piss off
+   * I don't think, you should call this, normally it will be called by the framework
+   */
   render() {
     let old_rnodes = this.#parentElement.querySelectorAll(
       "#hyperapp_rendernode"
@@ -284,30 +237,71 @@ class VDOM {
     });
   }
 
+  /**
+   * loading...
+   * @returns {Array<VNode>} the up-to-date (not specifically rendered) elements
+   */
   get children() {
-    return this.#elements;
+    return this.#elements(this.#state);
   }
 
+  /**
+   * loading...
+   * @return {HTMLElement} the parent element, normally the body
+   */
   get parentElement() {
     return this.#parentElement;
   }
 
+  /**
+   * loading...
+   * @param {(state: {[name: string]: unknown})=>Array<VNode>} val the new children;
+   */
   set children(val) {
     this.#elements = val;
   }
 
+  /**
+   * loading...
+   * @param {HTMLElement} val the new parent element (why?)
+   */
   set parentElement(val) {
     this.#parentElement = val;
   }
 }
 
+/**
+ * *screaming*
+ * @param {string} name the eventname (EventListener specifications)
+ * @param {(e: HEvent)=>void} func the event
+ * @returns {{name: string; invoke: (e: HEvent)=>void;}} the event object
+ */
 function event(name, func) {
   return { name: name, invoke: func };
 }
 
+/**
+ * loading...
+ * Create an Element
+ *
+ * @param {string} tag the tag
+ * @param {Array<VNode>} children the Children
+ * @param {{[name: string]: unknown}} props the properties
+ * @param {string} text the text Content
+ * @returns {VNode}
+ */
 const h = (tag, children, props = {}, text = "") =>
   new VNode(tag, children, props, text);
 
+/**
+ * Eyy, eyy, you let me and Jean Phillipe, by not properly making food.
+ * apologise to Jean phillipe
+ *
+ * @param {VDOM} vdom
+ * @param {VNode} el
+ * @param {{name: string, invoke: (HEvent)=void}} e
+ * @param {VNode} vnode
+ */
 function addEvent(vdom, el, e, vnode = undefined) {
   print(vdom, el, e, vnode);
   addEventListener(e.name, (...args) => {
@@ -316,10 +310,15 @@ function addEvent(vdom, el, e, vnode = undefined) {
   });
 }
 
+/**
+ * loading...
+ * @param {import("./type").vdomoptions} options the options, what else?
+ * @returns {VDOM} the virtual dom
+ */
 function app(options) {
   let vdom = new VDOM(
     options.node || document.body,
-    options.elements || [],
+    options.elements || ((state) => []),
     options.subscriptions || [],
     options.init || {}
   );
@@ -327,11 +326,19 @@ function app(options) {
   return vdom;
 }
 
+/**
+ * loading...
+ * @param {import("./type").vdomoptions} options
+ * @returns {VDOM} the vdom to put into your route Object
+ */
 function routeApp(options) {
   options.dontRender = true;
   return app(options);
 }
-
+/**
+ * loading...
+ * @param {import("./type").routeArray} routes the routes of your Application
+ */
 function route(routes) {
   if (
     /^((https{0,1}){0,1}(file){0,1}):\/{2,3}([a-zA-Z\.\-_]+(:[a-zA-Z\.\-_]+){0,1}@)*[a-zA-Z\.\-_]+(\/[a-zA-Z\.\-_]*)+([\?][=a-zA-Z\-._\+%]+(&[=a-zA-Z\-._\+%]+)*)*$/g.test(
