@@ -36,17 +36,15 @@ class VNode {
   /**
    *
    * @param {string} tag The HTMLElement tag
-   * @param {Array<VNode>} children the children
    * @param {{[name: string]: unknown}} props the element properties
-   * @param {string} text The textcontent
+   * @param {...VNode|string} children the children
    */
-  constructor(tag, children, props = {}, text = "") {
+  constructor(tag, props = {}, ...children) {
     if (!children) children = [];
     if (!Array.isArray(children)) children = [children];
     this.#tag = tag;
     this.#children = children;
     this.#props = props;
-    this.#text = text;
   }
 
   /**
@@ -65,6 +63,7 @@ class VNode {
   callEvent(eventName, args = []) {
     if (eventName == "hyperappUpdate") {
       this.#children.forEach((el) => {
+        if(!(el instanceof VNode)) return;
         ["hyperappUpdate", "update", "hyperUpdate"].forEach((e) =>
           el.callEvent(e, [this, Date.now()])
         );
@@ -125,7 +124,7 @@ class VNode {
         el.setAttribute(prop, Object.values(this.#props)[i]);
     });
     el.setAttribute("hyperapp_element", "");
-    this.#children.forEach((child) => el.append(child.render()));
+    this.#children.forEach((child) => el.append(child instanceof VNode?child.render():child));
     if (this.#props.events) {
       for (let e in this.#props.events) {
         el.addEventListener(e, (...args) => {
@@ -285,13 +284,12 @@ function event(name, func) {
  * Create an Element
  *
  * @param {string} tag the tag
- * @param {Array<VNode>} children the Children
  * @param {{[name: string]: unknown}} props the properties
- * @param {string} text the text Content
+ * @param {...VNode|string} children the Children
  * @returns {VNode}
  */
-const h = (tag, children, props = {}, text = "") =>
-  new VNode(tag, children, props, text);
+const h = (tag, props = {}, ...children) =>
+  new VNode(tag, props, ...children);
 
 /**
  * Eyy, eyy, you let me and Jean Phillipe, by not properly making food.
