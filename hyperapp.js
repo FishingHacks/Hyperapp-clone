@@ -43,8 +43,8 @@ class VNode {
     if (!children) children = [];
     if (!Array.isArray(children)) children = [children];
     this.#tag = tag;
-    this.#children = children;
-    this.#props = props;
+    this.#children = children||[];
+    this.#props = props||{};
   }
 
   /**
@@ -52,7 +52,7 @@ class VNode {
    * - Maybe Gordon Ramsey
    */
   set vdom(val) {
-    this.#children.forEach((el) => (el.vdom = val));
+    this.#children.forEach((el) => (el instanceof VNode)?(el.vdom = val):null);
     this.#vdom = val;
   }
 
@@ -109,6 +109,7 @@ class VNode {
     if (!this.#vdom) return undefined;
     let propVals = Object.values(this.#props);
     let propKeys = Object.keys(this.#props);
+    if(!this.#props.events) this.#props.events = {}
     propKeys.forEach((el, i) => {
       el.startsWith("on") ? (this.#props.events[el.substring(2)] = propVals[i]) : null;
     });
@@ -116,13 +117,15 @@ class VNode {
     let txt = this.text;
     let el = document.createElement(this.#tag);
     el.textContent = txt != undefined ? txt : "";
-    if (this.#props.classes)
-      this.#props.classes.forEach((cls) => el.classList.add(cls));
     let clonedProps = {};
     Object.keys(clonedProps).forEach((prop, i) => {
       if (prop != "events")
         el.setAttribute(prop, Object.values(this.#props)[i]);
     });
+    propKeys.forEach(prop=>{
+      if(!prop || prop=="events") return;
+      el.setAttribute(prop, this.#props[prop]);
+    })
     el.setAttribute("hyperapp_element", "");
     this.#children.forEach((child) => el.append(child instanceof VNode?child.render():child));
     if (this.#props.events) {
@@ -201,7 +204,9 @@ class VDOM {
    * Now, all of you, piss off
    * I don't think, you should call this, normally it will be called by the framework
    */
-  render() {
+  async render() {
+    let evt = new CustomEvent("hyerapprender", {cancelable: true});
+    if(!window.dispatchEvent(evt)) return;
     let old_rnodes = this.#parentElement.querySelectorAll(
       "#hyperapp_rendernode"
     );
@@ -321,6 +326,7 @@ function app(options) {
     options.init || {}
   );
   if (!options.dontRender) vdom.render();
+  globalThis.vdom = vdom;
   return vdom;
 }
 
